@@ -1,3 +1,4 @@
+\
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -33,6 +34,7 @@ struct bullet_pattern
 inline void http_print_bullet(const bullet_pattern &pattern,
                               const unsigned user,
                               unsigned long long time,
+                              const char *key,
                               const char *data)
 {
     static char buffer[1024 * 1024];
@@ -40,7 +42,7 @@ inline void http_print_bullet(const bullet_pattern &pattern,
     static char user_agent[] = "podnebesnaya";
 
     static char add_log[] = "POST /add_log HTTP/1.1\nHost: %s\nUser-Agent: %s\nConnection: Close\nContent-Length: %d\n\n%s";
-    static char add_log_content[] = "user=%u&data=%s&time=%llu";
+    static char add_log_content[] = "user=%u&data=%s&key=%s";
     static char read_log[] = "POST /get_user_logs HTTP/1.1\nHost: %s\nUser-Agent: %s\nConnection: Close\nContent-Length: %d\n\n";
     static char read_log_content[] = "user=%u&begin_time=%llu&end_time=%llu";
 
@@ -56,7 +58,7 @@ inline void http_print_bullet(const bullet_pattern &pattern,
                                 add_log_content,
                                 user,
                                 data,
-                                time);
+                                key);
         break;
     case read_command:
         cmd = read_log;
@@ -254,7 +256,7 @@ int main(int argc, char *argv[])
             const bullet_pattern &bullet = is_read ? read_bullet : write_bullet;
             // вывод патрона в лог
             switch(type) {
-            case http:  http_print_bullet(bullet, user, time, current_data);                                break;
+            case http:  http_print_bullet(bullet, user, time, current_date, current_data);                  break;
             case plain: plain_print_bullet(bullet, time, key, current_data, is_read ? "r_tag" : "w_tag");   break;
             }
     }
