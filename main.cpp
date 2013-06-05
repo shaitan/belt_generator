@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
     bullet_pattern read_bullet = { read_command, 0, 0, groups };
 
     const ull read_rps = 0;
-    const ull write_rps = 6;
+    const ull write_rps = 20000;
 
     // процент запросов генерируют активные пользователи
     const double active_requests_part = 0.8;
@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
     const double read_part = double(read_rps) / double(read_rps + write_rps);
 
     // длительность, миллисекунды
-    const ull duration = 24 * 60 * 60 * 1000;
+    const ull duration = 7 * 60 * 60 * 1000;
     // количество запросов
     const ull requests = (duration / 1000) * (read_rps + write_rps);
     // количество пользователей
