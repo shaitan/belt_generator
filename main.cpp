@@ -82,8 +82,9 @@ inline void http_print_bullet(const bullet_pattern &pattern,
                                      content
         );
 
-    printf("%d\n%s\n",
+    printf("%d %llu\n%s\n",
            buffer_size + 8,
+           time,
            buffer);
 }
 
