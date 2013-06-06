@@ -41,9 +41,9 @@ inline void http_print_bullet(const bullet_pattern &pattern,
     static char host[] = "s03h.xxx.yandex.net";
     static char user_agent[] = "podnebesnaya";
 
-    static char add_log[] = "POST /add_log HTTP/1.1\nHost: %s\nUser-Agent: %s\nConnection: Close\nContent-Length: %d\n\n%s";
+    static char add_log[] = "POST /add_log HTTP/1.1\nHost: %s\nUser-Agent: %s\nConnection: Close\nContent-Length: %d\n\n%s\n";
     static char add_log_content[] = "user=%u&data=%s&key=%s";
-    static char read_log[] = "POST /get_user_logs HTTP/1.1\nHost: %s\nUser-Agent: %s\nConnection: Close\nContent-Length: %d\n\n";
+    static char read_log[] = "POST /get_user_logs HTTP/1.1\nHost: %s\nUser-Agent: %s\nConnection: Close\nContent-Length: %d\n\n%s\n";
     static char read_log_content[] = "user=%u&begin_time=%llu&end_time=%llu";
 
 
@@ -83,7 +83,7 @@ inline void http_print_bullet(const bullet_pattern &pattern,
         );
 
     printf("%d %llu\n%s\n",
-           buffer_size + 8,
+           buffer_size,
            time,
            buffer);
 }
