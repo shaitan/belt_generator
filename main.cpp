@@ -1,4 +1,3 @@
-\
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -164,7 +163,7 @@ std::vector<std::string> parse_dates(char *value)
 int main(int argc, char *argv[])
 {
     if (argc != 4) {
-        fprintf(stderr, "Usage: %s [write_date_suffix] [read_date_suffixes] [output type]\n", argv[0]);
+        fprintf(stderr, "Usage: %s write_date_suffix read_date_suffixes output type\n", argv[0]);
         return 1;
     }
 
@@ -251,7 +250,7 @@ int main(int argc, char *argv[])
             data[data_size] = 0;
         }
 
-            snprintf(key, sizeof(key), "%u_%s", user, current_date);
+            snprintf(key, sizeof(key), "%u.%s", user, current_date);
 
             // выбор патрона
             const bullet_pattern &bullet = is_read ? read_bullet : write_bullet;
