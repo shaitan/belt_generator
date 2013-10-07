@@ -23,6 +23,10 @@ static void usage(char *p)
 	        " -d duration          - duration of shooting\n"
 	        " -H host              - target host (http only)\n"
 	        " -k keep-alive        - set Keep-Alive to http header. Othervise Close will be used (http only)\n"
+	        " -i                   - io flags for write (plain only)\n"
+	        " -I                   - io flags for read (plain only)\n"
+	        " -c                   - command flags for write (plain only)\n"
+	        " -C                   - command flags for read (plain only)\n"
 	        " -h                   - display this help and exit\n"
 	        , p);
 }
@@ -219,7 +223,12 @@ int main(int argc, char *argv[]) {
 
 	bool keep_alive = false;
 
-	while ((ch = getopt(argc, argv, "o:w:r:g:p:s:S:R:W:d:H:kh")) != -1) {
+	unsigned int write_ioflags = 2 /* DNET_IO_FLAGS_APPEND */;
+	unsigned long long write_cflags = 0;
+	unsigned int read_ioflags = 0;
+	unsigned long long read_cflags = 0;
+
+	while ((ch = getopt(argc, argv, "o:w:r:g:p:s:S:R:W:d:H:ki:I:c:C:h")) != -1) {
 		switch (ch) {
 			case 'o': {
 				type = parse_type(optarg);
@@ -240,6 +249,10 @@ int main(int argc, char *argv[]) {
 			case 'd': duration		= strtol(optarg, NULL, 0);	break;
 			case 'H': host			= optarg;					break;
 			case 'k': keep_alive	= true;						break;
+			case 'i': write_ioflags	= strtol(optarg, NULL, 0);	break;
+			case 'I': read_ioflags	= strtol(optarg, NULL, 0);	break;
+			case 'c': write_cflags	= strtol(optarg, NULL, 0);	break;
+			case 'C': read_cflags	= strtol(optarg, NULL, 0);	break;
 			case 'h':
 			default:
 				usage(argv[0]);
@@ -250,8 +263,8 @@ int main(int argc, char *argv[]) {
 	srand(time(0));
 
 
-	bullet_pattern write_bullet = { write_command, 2 /* DNET_IO_FLAGS_APPEND */, 0, groups };
-	bullet_pattern read_bullet = { read_command, 0, 0, groups };
+	bullet_pattern write_bullet = { write_command, write_ioflags, write_cflags, groups };
+	bullet_pattern read_bullet = { read_command, read_ioflags, read_cflags, groups };
 
 	// процент запросов генерируют активные пользователи
 	const double active_requests_part = 0.8;
