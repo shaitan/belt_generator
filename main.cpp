@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
 	size_t max_data_size = 120;
 
 	ull read_rps = 0;
-	ull write_rps = 20000;
+	ull write_rps = 0;
 
 	// длительность, миллисекунды
 	ull duration = 7 * 60 * 60 * 1000;
