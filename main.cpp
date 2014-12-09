@@ -4,6 +4,8 @@
 #include <ctime>
 #include <ctype.h>
 #include <stdarg.h>
+#include <iostream>
+#include <sstream>
 #include <memory>
 #include <vector>
 #include <string>
@@ -128,47 +130,39 @@ inline void plain_print_bullet(const bullet_pattern &pattern,
                                const char *data,
                                const char *tag = "")
 {
-	static char buffer[1024 * 1024];
+    std::ostringstream ss;
+    
+    ss << static_cast<unsigned long long>(pattern.cflags) << ' '
+       << static_cast<unsigned int>(pattern.ioflags) << ' '
+       << pattern.groups << ' '
+       << key << '\n';
 
-	static const char write[] = "%llu %u %s %s\nwrite\n%s\n";
-	static const char read[] = "%llu %u %s %s\nread\n";
-	static const char remove[] = "%llu %u %s %s\nremove\n";
-
-	const char *cmd;
 	switch (pattern.cmd) {
 	case write_command:
-		cmd = write;
+	    ss << "write";
 		break;
 	case read_command:
-		cmd = read;
+        ss << "read";
 		break;
 	case remove_command:
-		cmd = remove;
+        ss << "remove";
 		break;
 	default:
 		fprintf(stderr, "unknown command: %d\n", int(pattern.cmd));
 		fflush(stderr);
 		abort();
 	}
+    ss << '\n';
 
-	const int buffer_size = snprintf(buffer, sizeof(buffer),
-	                                 cmd,
-	                                 static_cast<unsigned long long>(pattern.cflags),
-	                                 static_cast<unsigned int>(pattern.ioflags),
-	                                 pattern.groups,
-	                                 key,
-	                                 data);
-	if (buffer_size < 0) {
-		fprintf(stderr, "can't sprintf: %d\n", buffer_size);
-		fflush(stderr);
-		abort();
-	}
+    if (pattern.cmd == write_command)
+        ss << data << '\n';
 
-	printf("%d %llu %s\n%s\n",
-	       buffer_size,
-	       static_cast<unsigned long long>(time),
-	       tag,
-	       buffer);
+    std::string buffer = std::move( ss.str() );
+
+    std::cout << buffer.size() << ' '
+         << static_cast<unsigned long long>(time) << ' '
+         << tag << '\n'
+         << buffer << '\n';
 }
 
 
