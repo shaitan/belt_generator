@@ -4,6 +4,7 @@
 #include <ctime>
 #include <ctype.h>
 #include <stdarg.h>
+#include <memory>
 #include <vector>
 #include <string>
 #include <map>
@@ -16,11 +17,11 @@ static void usage(char *p)
 	        " -r read_prefix       - prefix of read key\n"
 	        " -g group             - elliptics group\n"
 	        " -p proxy_hand        - write hand of proxy to be called (http only)\n"
-	        " -s min_data_size     - minimum size of data\n"
-	        " -S max_data_size     - maximum size of data\n"
+	        " -s min_data_size     - minimum size of data in bytes\n"
+	        " -S max_data_size     - maximum size of data in bytes\n"
 	        " -R read_rps          - rps of read operation\n"
 	        " -W write_rps         - rps of write operation\n"
-	        " -d duration          - duration of shooting\n"
+	        " -d duration          - duration of shooting in ms\n"
 	        " -H host              - target host (http only)\n"
 	        " -k keep-alive        - set Keep-Alive to http header. Othervise Close will be used (http only)\n"
 	        " -i                   - io flags for write (plain only)\n"
@@ -280,7 +281,7 @@ int main(int argc, char *argv[]) {
 	// количество активных пользователей
 	const ull active_users = users * active_users_part;
 
-	char data[1024];
+    std::unique_ptr<char[]> data( new char[max_data_size + 1] );
 	char key[1024];
 	char alphabet[10 + 26 * 2];
 	const size_t alphabet_size = sizeof(alphabet);
@@ -303,7 +304,7 @@ int main(int argc, char *argv[]) {
 		: ((rand() % (users - active_users)) + active_users);
 
 		const char *current_date = date;
-		const char *current_data = data;
+		const char *current_data = data.get();
 
 		const bool is_read = check(read_part);
 
