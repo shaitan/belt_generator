@@ -173,7 +173,7 @@ bool check(double probabilty)
 	return rand() < (probabilty * RAND_MAX);
 }
 
-std::vector<std::string> parse_dates(char *value)
+std::vector<std::string> parse_prefixes(char *value)
 {
 	std::vector<std::string> result;
 	bool finished = false;
@@ -200,8 +200,8 @@ inline output_type parse_type(const char *type) {
 int main(int argc, char *argv[]) {
 	int ch;
 	output_type type = plain;
-	const char *date;
-	std::vector<std::string> read_dates;
+	const char *prefix = NULL;
+	std::vector<std::string> read_prefix;
 	const char *groups = "1";
 	const char *proxy_hand = "add_log";
 	const char *host = "s03h.xxx.yandex.net";
@@ -233,8 +233,8 @@ int main(int argc, char *argv[]) {
 				}
 			}
 			break;
-			case 'w': date			= optarg;					break;
-			case 'r': read_dates	= parse_dates(optarg);		break;
+			case 'w': prefix		= optarg;					break;
+			case 'r': read_prefix	= parse_prefixes(optarg);  	break;
 			case 'g': groups		= optarg;					break;
 			case 'p': proxy_hand	= optarg;					break;
 			case 's': min_data_size	= strtol(optarg, NULL, 0);	break;
@@ -297,13 +297,13 @@ int main(int argc, char *argv[]) {
 		? (rand() % active_users)
 		: ((rand() % (users - active_users)) + active_users);
 
-		const char *current_date = date;
+		const char *current_prefix = prefix;
 		const char *current_data = data.get();
 
-		const bool is_read = check(read_part);
+		const bool is_read = prefix ? check(read_part) : true;
 
 		if (is_read) {
-			current_date = read_dates[rand() % read_dates.size()].c_str();
+			current_prefix = read_prefix[rand() % read_prefix.size()].c_str();
 			current_data = "";
 		} else {
 			// размер данных патрона
@@ -316,14 +316,14 @@ int main(int argc, char *argv[]) {
 			data[data_size] = 0;
 		}
 
-		snprintf(key, sizeof(key), "%u.%s", user, current_date);
+		snprintf(key, sizeof(key), "%u.%s", user, current_prefix);
 
 		// выбор патрона
 		const bullet_pattern &bullet = is_read ? read_bullet : write_bullet;
 		// вывод патрона в лог
 		switch(type) {
 			case http:
-				http_print_bullet(bullet, user, time, current_date, current_data, host, keep_alive, proxy_hand);
+				http_print_bullet(bullet, user, time, current_prefix, current_data, host, keep_alive, proxy_hand);
 			break;
 			case plain:
 				plain_print_bullet(bullet, time, key, current_data, is_read ? "r_tag" : "w_tag");
