@@ -6,7 +6,6 @@
 #include <stdarg.h>
 #include <iostream>
 #include <sstream>
-#include <memory>
 #include <vector>
 #include <string>
 #include <map>
@@ -139,7 +138,7 @@ inline void plain_print_bullet(const bullet_pattern &pattern,
 
 	switch (pattern.cmd) {
 	case write_command:
-	    ss << "write";
+	    ss << "write\n" << data;
 		break;
 	case read_command:
         ss << "read";
@@ -154,10 +153,7 @@ inline void plain_print_bullet(const bullet_pattern &pattern,
 	}
     ss << '\n';
 
-    if (pattern.cmd == write_command)
-        ss << data << '\n';
-
-    std::string buffer = std::move( ss.str() );
+    std::string buffer = std::move(ss.str());
 
     std::cout << buffer.size() << ' '
          << static_cast<unsigned long long>(time) << ' '
@@ -275,7 +271,7 @@ int main(int argc, char *argv[]) {
 	// количество активных пользователей
 	const ull active_users = users * active_users_part;
 
-    std::unique_ptr<char[]> data( new char[max_data_size + 1] );
+    std::string data(max_data_size + 1, '\0');
 	char key[1024];
 	char alphabet[10 + 26 * 2];
 	const size_t alphabet_size = sizeof(alphabet);
@@ -288,6 +284,9 @@ int main(int argc, char *argv[]) {
 		alphabet[i + 10 + 26] = 'A' + i;
 	}
 
+    const char *current_prefix = prefix;
+    const char *current_data = NULL;
+
 	for (ull i = 0; i < requests; ++i) {
 		// время текущего патрона
 		const ull time = duration * i / requests;
@@ -296,9 +295,6 @@ int main(int argc, char *argv[]) {
 		const unsigned user = check(active_requests_part)
 		? (rand() % active_users)
 		: ((rand() % (users - active_users)) + active_users);
-
-		const char *current_prefix = prefix;
-		const char *current_data = data.get();
 
 		const bool is_read = prefix ? check(read_part) : true;
 
@@ -313,7 +309,8 @@ int main(int argc, char *argv[]) {
 			for (size_t j = 0; j < data_size; ++j) {
 				data[j] = alphabet[rand() % alphabet_size];
 			}
-			data[data_size] = 0;
+			data[data_size] = '\0';
+            current_data = data.c_str();
 		}
 
 		snprintf(key, sizeof(key), "%u.%s", user, current_prefix);
