@@ -4,6 +4,8 @@
 #include <ctime>
 #include <ctype.h>
 #include <stdarg.h>
+#include <iostream>
+#include <sstream>
 #include <vector>
 #include <string>
 #include <map>
@@ -16,11 +18,11 @@ static void usage(char *p)
 	        " -r read_prefix       - prefix of read key\n"
 	        " -g group             - elliptics group\n"
 	        " -p proxy_hand        - write hand of proxy to be called (http only)\n"
-	        " -s min_data_size     - minimum size of data\n"
-	        " -S max_data_size     - maximum size of data\n"
+	        " -s min_data_size     - minimum size of data in bytes\n"
+	        " -S max_data_size     - maximum size of data in bytes\n"
 	        " -R read_rps          - rps of read operation\n"
 	        " -W write_rps         - rps of write operation\n"
-	        " -d duration          - duration of shooting\n"
+	        " -d duration          - duration of shooting in ms\n"
 	        " -H host              - target host (http only)\n"
 	        " -k keep-alive        - set Keep-Alive to http header. Othervise Close will be used (http only)\n"
 	        " -i                   - io flags for write (plain only)\n"
@@ -127,47 +129,36 @@ inline void plain_print_bullet(const bullet_pattern &pattern,
                                const char *data,
                                const char *tag = "")
 {
-	static char buffer[1024 * 1024];
+    std::ostringstream ss;
+    
+    ss << static_cast<unsigned long long>(pattern.cflags) << ' '
+       << static_cast<unsigned int>(pattern.ioflags) << ' '
+       << pattern.groups << ' '
+       << key << '\n';
 
-	static const char write[] = "%llu %u %s %s\nwrite\n%s\n";
-	static const char read[] = "%llu %u %s %s\nread\n";
-	static const char remove[] = "%llu %u %s %s\nremove\n";
-
-	const char *cmd;
 	switch (pattern.cmd) {
 	case write_command:
-		cmd = write;
+	    ss << "write\n" << data;
 		break;
 	case read_command:
-		cmd = read;
+        ss << "read";
 		break;
 	case remove_command:
-		cmd = remove;
+        ss << "remove";
 		break;
 	default:
 		fprintf(stderr, "unknown command: %d\n", int(pattern.cmd));
 		fflush(stderr);
 		abort();
 	}
+    ss << '\n';
 
-	const int buffer_size = snprintf(buffer, sizeof(buffer),
-	                                 cmd,
-	                                 static_cast<unsigned long long>(pattern.cflags),
-	                                 static_cast<unsigned int>(pattern.ioflags),
-	                                 pattern.groups,
-	                                 key,
-	                                 data);
-	if (buffer_size < 0) {
-		fprintf(stderr, "can't sprintf: %d\n", buffer_size);
-		fflush(stderr);
-		abort();
-	}
+    std::string buffer = std::move(ss.str());
 
-	printf("%d %llu %s\n%s\n",
-	       buffer_size,
-	       static_cast<unsigned long long>(time),
-	       tag,
-	       buffer);
+    std::cout << buffer.size() << ' '
+         << static_cast<unsigned long long>(time) << ' '
+         << tag << '\n'
+         << buffer << '\n';
 }
 
 
@@ -178,7 +169,7 @@ bool check(double probabilty)
 	return rand() < (probabilty * RAND_MAX);
 }
 
-std::vector<std::string> parse_dates(char *value)
+std::vector<std::string> parse_prefixes(char *value)
 {
 	std::vector<std::string> result;
 	bool finished = false;
@@ -205,8 +196,8 @@ inline output_type parse_type(const char *type) {
 int main(int argc, char *argv[]) {
 	int ch;
 	output_type type = plain;
-	const char *date;
-	std::vector<std::string> read_dates;
+	const char *prefix = NULL;
+	std::vector<std::string> read_prefix;
 	const char *groups = "1";
 	const char *proxy_hand = "add_log";
 	const char *host = "s03h.xxx.yandex.net";
@@ -216,7 +207,7 @@ int main(int argc, char *argv[]) {
 	size_t max_data_size = 120;
 
 	ull read_rps = 0;
-	ull write_rps = 20000;
+	ull write_rps = 0;
 
 	// длительность, миллисекунды
 	ull duration = 7 * 60 * 60 * 1000;
@@ -238,8 +229,8 @@ int main(int argc, char *argv[]) {
 				}
 			}
 			break;
-			case 'w': date			= optarg;					break;
-			case 'r': read_dates	= parse_dates(optarg);		break;
+			case 'w': prefix		= optarg;					break;
+			case 'r': read_prefix	= parse_prefixes(optarg);  	break;
 			case 'g': groups		= optarg;					break;
 			case 'p': proxy_hand	= optarg;					break;
 			case 's': min_data_size	= strtol(optarg, NULL, 0);	break;
@@ -280,7 +271,7 @@ int main(int argc, char *argv[]) {
 	// количество активных пользователей
 	const ull active_users = users * active_users_part;
 
-	char data[1024];
+    std::string data(max_data_size + 1, '\0');
 	char key[1024];
 	char alphabet[10 + 26 * 2];
 	const size_t alphabet_size = sizeof(alphabet);
@@ -293,6 +284,9 @@ int main(int argc, char *argv[]) {
 		alphabet[i + 10 + 26] = 'A' + i;
 	}
 
+    const char *current_prefix = prefix;
+    const char *current_data = NULL;
+
 	for (ull i = 0; i < requests; ++i) {
 		// время текущего патрона
 		const ull time = duration * i / requests;
@@ -302,13 +296,10 @@ int main(int argc, char *argv[]) {
 		? (rand() % active_users)
 		: ((rand() % (users - active_users)) + active_users);
 
-		const char *current_date = date;
-		const char *current_data = data;
-
-		const bool is_read = check(read_part);
+		const bool is_read = prefix ? check(read_part) : true;
 
 		if (is_read) {
-			current_date = read_dates[rand() % read_dates.size()].c_str();
+			current_prefix = read_prefix[rand() % read_prefix.size()].c_str();
 			current_data = "";
 		} else {
 			// размер данных патрона
@@ -318,17 +309,18 @@ int main(int argc, char *argv[]) {
 			for (size_t j = 0; j < data_size; ++j) {
 				data[j] = alphabet[rand() % alphabet_size];
 			}
-			data[data_size] = 0;
+			data[data_size] = '\0';
+            current_data = data.c_str();
 		}
 
-		snprintf(key, sizeof(key), "%u.%s", user, current_date);
+		snprintf(key, sizeof(key), "%u.%s", user, current_prefix);
 
 		// выбор патрона
 		const bullet_pattern &bullet = is_read ? read_bullet : write_bullet;
 		// вывод патрона в лог
 		switch(type) {
 			case http:
-				http_print_bullet(bullet, user, time, current_date, current_data, host, keep_alive, proxy_hand);
+				http_print_bullet(bullet, user, time, current_prefix, current_data, host, keep_alive, proxy_hand);
 			break;
 			case plain:
 				plain_print_bullet(bullet, time, key, current_data, is_read ? "r_tag" : "w_tag");
