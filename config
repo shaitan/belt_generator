@@ -1,0 +1,18 @@
+{
+"output_type"	: "plain",
+"min_data_size" : 100,
+"max_data_size" : 1000,
+"read_rps"	: 0,
+"write_rps"	: 10000,
+"write_prefix"	: "load_",
+"read_prefix"	: "",
+"groups"	: "1",
+"duration"	: "600",
+"proxy_hand"	: "add_log",
+"host"		: "s03h.xxx.yandex.net",
+"keep_alive"	: "false",
+"write_ioflags"	: 2,
+"read_ioflags"	: 0,
+"write_cflags"	: 0,
+"read_cflags"	: 0
+}
