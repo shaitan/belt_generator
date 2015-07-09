@@ -215,6 +215,22 @@ inline output_type parse_type(const char *type) {
 		return unknown;
 }
 
+bool check_config_params( const config_params &params )
+{
+	// check 'groups'
+	if (params.groups.empty()) {
+		std::cerr << "check_config_params: empty 'groups'" << std::endl;
+		return false;
+	}
+	for (char c : params.groups) {
+		if (!isdigit(c) && c != ':') {
+			std::cerr << "check_config_params: unexpected character '" << c << "' in 'groups'" << std::endl;
+			return false;
+		}
+	}
+	return true;
+}
+
 class config
 {
 public:
@@ -228,13 +244,13 @@ public:
 	{
 		std::ifstream file(config_path);
 		if (!file.is_open()) {
-			std::cerr << "Config::ParseConfig: couldn't open " << config_path << std::endl;
+			std::cerr << "config::parse_config: couldn't open " << config_path << std::endl;
 			return false;
 		}
 		try {
 			boost::property_tree::read_json(file, m_ptree);
 		} catch (std::exception &e) {
-			std::cerr << "Config::ParseConfig: " << e.what() << std::endl;
+			std::cerr << "config::parse_config: " << e.what() << std::endl;
 			return false;
 		}
 		return true;
@@ -289,7 +305,11 @@ int main(int argc, char *argv[]) {
 		GET_CONFIG_PARAM(read_cflags, ull);
 	} catch(std::exception &e) {
 		std::cerr << e.what() << std::endl;
+		return -1;
 	}
+
+	if (!check_config_params(params))
+		return -1;
 
 	srand(time(0));
 
